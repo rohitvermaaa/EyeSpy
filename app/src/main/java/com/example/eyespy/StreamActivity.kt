@@ -1,9 +1,12 @@
 package com.example.eyespy
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -12,10 +15,17 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import androidx.core.view.isGone
+import androidx.core.net.toUri
 
 class StreamActivity : AppCompatActivity() {
 
     private lateinit var viewFinder: PreviewView
+    private lateinit var fabMenu: FloatingActionButton
+    private lateinit var fabPolice: FloatingActionButton
+    private lateinit var fabDoctor: FloatingActionButton
+    private lateinit var fabSwitchCamera: FloatingActionButton
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -25,10 +35,47 @@ class StreamActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Hide system bars for fullscreen immersive experience
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                        View.SYSTEM_UI_FLAG_FULLSCREEN or
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                )
+        supportActionBar?.hide()
+
         setContentView(R.layout.activity_stream)
+
+        // Initialize the PreviewView for the camera preview
         viewFinder = findViewById(R.id.viewFinder)
 
-        // Check for camera permission and request it if not granted
+        // Initialize floating action buttons
+        fabMenu = findViewById(R.id.fab_menu)
+        fabPolice = findViewById(R.id.fab_police)
+        fabDoctor = findViewById(R.id.fab_doctor)
+        fabSwitchCamera = findViewById(R.id.fab_switch_camera)
+
+        // Toggle sub-menu buttons on main menu button click
+        fabMenu.setOnClickListener { toggleMenu() }
+
+        // Set click listeners for the sub-buttons (you can define functionality later)
+        fabPolice.setOnClickListener {
+            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                data = "tel:100".toUri()
+            }
+            startActivity(dialIntent)
+        }
+        fabDoctor.setOnClickListener {
+            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                data = "tel:102".toUri()
+            }
+            startActivity(dialIntent)
+        }
+        fabSwitchCamera.setOnClickListener {
+            Toast.makeText(this, "No Camera Found", Toast.LENGTH_SHORT).show()
+        }
+
+        // Request camera permission and start camera if granted
         if (allPermissionsGranted()) {
             startCamera()
         } else {
@@ -38,18 +85,31 @@ class StreamActivity : AppCompatActivity() {
         }
     }
 
+    // Toggle the visibility of the sub-menu floating buttons
+    private fun toggleMenu() {
+        if (fabPolice.isGone) {
+            fabPolice.visibility = View.VISIBLE
+            fabDoctor.visibility = View.VISIBLE
+            fabSwitchCamera.visibility = View.VISIBLE
+        } else {
+            fabPolice.visibility = View.GONE
+            fabDoctor.visibility = View.GONE
+            fabSwitchCamera.visibility = View.GONE
+        }
+    }
+
+    // Start the CameraX preview
     private fun startCamera() {
-        // Obtain an instance of ProcessCameraProvider
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            // Create and configure the Preview use case to display the camera feed
+            // Build the preview use case to display the camera feed in the PreviewView
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(viewFinder.surfaceProvider)
             }
 
-            // Select the back camera (or change to DEFAULT_FRONT_CAMERA if needed)
+            // Select the back camera; change to DEFAULT_FRONT_CAMERA if needed
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -63,7 +123,7 @@ class StreamActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    // Helper function to verify if all required permissions are granted
+    // Helper function to verify that all required permissions are granted
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }

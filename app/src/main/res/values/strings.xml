@@ -10,4 +10,8 @@
     <string name="arrow">Arrow</string>
     <string name="backgate456">BackGate456</string>
     <string name="balcony789">Balcony789</string>
+    <string name="used_for_switching_camera">Used for switching camera</string>
+    <string name="used_for_calling_ambulance">Used for Calling Ambulance</string>
+    <string name="used_for_calling_police">Used for Calling Police</string>
+    <string name="menu_for_further_functionality">Menu for further functionality</string>
 </resources>
