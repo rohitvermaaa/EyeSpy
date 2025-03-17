@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">EyeSpy</string>
+    <string name="camera_id">Camera ID</string>
+    <string name="login">Login</string>
+    <string name="password">Password</string>
+    <string name="log_in">Log in</string>
+    <string name="biometric_login">Biometric Login</string>
+    <string name="previous_login">Previous Login</string>
+    <string name="frontgate123">FrontGate123</string>
+    <string name="arrow">Arrow</string>
+    <string name="backgate456">BackGate456</string>
+    <string name="balcony789">Balcony789</string>
+</resources>
