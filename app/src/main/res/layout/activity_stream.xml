@@ -6,68 +6,72 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.camera.view.PreviewView
-        android:id="@+id/viewFinder"
+    <FrameLayout
+        android:id="@+id/image_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@drawable/border"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_menu"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/menu_for_further_functionality"
-        android:src="@drawable/ic_menu"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="16dp"
-        android:backgroundTint="#00FFFFFF"
-        android:alpha="1.0"        />
+        <ImageView
+            android:id="@+id/mjpegView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/border"
+            android:scaleType="fitXY" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_police"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/used_for_calling_police"
-        android:src="@drawable/ic_police"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/fab_menu"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="#00FFFFFF"
-        android:alpha="1.0"/>
+        <!-- Floating buttons overlap the image -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/menu_for_further_functionality"
+            android:src="@drawable/ic_menu"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:backgroundTint="#00FFFFFF"
+            android:alpha="1.0" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_doctor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/used_for_calling_ambulance"
-        android:src="@drawable/ic_doctor"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/fab_police"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="#00FFFFFF"
-        android:alpha="1.0"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_police"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/used_for_calling_police"
+            android:src="@drawable/ic_police"
+            android:visibility="gone"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="88dp"
+            android:backgroundTint="#00FFFFFF"
+            android:alpha="1.0"/>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_switch_camera"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/used_for_switching_camera"
-        android:src="@drawable/ic_switch_camera"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/fab_doctor"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="#00FFFFFF"
-        android:alpha="1.0"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_doctor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/used_for_calling_ambulance"
+            android:src="@drawable/ic_doctor"
+            android:visibility="gone"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="160dp"
+            android:backgroundTint="#00FFFFFF"
+            android:alpha="1.0"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_switch_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/used_for_switching_camera"
+            android:src="@drawable/ic_switch_camera"
+            android:visibility="gone"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="232dp"
+            android:backgroundTint="#00FFFFFF"
+            android:alpha="1.0"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

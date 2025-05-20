@@ -1,37 +1,39 @@
 package com.example.eyespy
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import androidx.core.view.isGone
 import androidx.core.net.toUri
+import androidx.core.view.isGone
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 
 class StreamActivity : AppCompatActivity() {
 
-    private lateinit var viewFinder: PreviewView
+    private lateinit var mjpegView: ImageView
     private lateinit var fabMenu: FloatingActionButton
     private lateinit var fabPolice: FloatingActionButton
     private lateinit var fabDoctor: FloatingActionButton
     private lateinit var fabSwitchCamera: FloatingActionButton
 
     companion object {
-        private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
         private const val TAG = "StreamActivity"
+        private const val STREAM_URL = "https://5cab-116-66-189-175.ngrok-free.app/video-feed"
     }
+
+    private val executor = Executors.newSingleThreadExecutor()
+    private var streaming = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,8 +48,8 @@ class StreamActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_stream)
 
-        // Initialize the PreviewView for the camera preview
-        viewFinder = findViewById(R.id.viewFinder)
+        // Initialize the ImageView for MJPEG stream
+        mjpegView = findViewById(R.id.mjpegView)
 
         // Initialize floating action buttons
         fabMenu = findViewById(R.id.fab_menu)
@@ -58,7 +60,7 @@ class StreamActivity : AppCompatActivity() {
         // Toggle sub-menu buttons on main menu button click
         fabMenu.setOnClickListener { toggleMenu() }
 
-        // Set click listeners for the sub-buttons (you can define functionality later)
+        // Set click listeners for the sub-buttons
         fabPolice.setOnClickListener {
             val dialIntent = Intent(Intent.ACTION_DIAL).apply {
                 data = "tel:100".toUri()
@@ -75,14 +77,13 @@ class StreamActivity : AppCompatActivity() {
             Toast.makeText(this, "No Camera Found", Toast.LENGTH_SHORT).show()
         }
 
-        // Request camera permission and start camera if granted
-        if (allPermissionsGranted()) {
-            startCamera()
-        } else {
-            ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-            )
-        }
+        // Start MJPEG streaming
+        startMjpegStream()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        streaming = false
     }
 
     // Toggle the visibility of the sub-menu floating buttons
@@ -98,50 +99,104 @@ class StreamActivity : AppCompatActivity() {
         }
     }
 
-    // Start the CameraX preview
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-
-            // Build the preview use case to display the camera feed in the PreviewView
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(viewFinder.surfaceProvider)
-            }
-
-            // Select the back camera; change to DEFAULT_FRONT_CAMERA if needed
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
+    // MJPEG stream reader
+    private fun startMjpegStream() {
+        executor.execute {
             try {
-                // Unbind all use cases before rebinding
-                cameraProvider.unbindAll()
-                // Bind the camera to the lifecycle with the preview use case
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview)
-            } catch (exc: Exception) {
-                Log.e(TAG, "Error binding camera use cases", exc)
-            }
-        }, ContextCompat.getMainExecutor(this))
-    }
-
-    // Helper function to verify that all required permissions are granted
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    // Handle the result of the permission request
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Log.d(TAG, "Permission result: ${grantResults.joinToString()}")
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                startCamera()
-            } else {
-                Log.e(TAG, "Camera permission not granted!")
-                Toast.makeText(this, "Camera permission not granted", Toast.LENGTH_SHORT).show()
-                finish()
+                val url = URL(STREAM_URL)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.connect()
+                val inputStream = connection.inputStream
+                readMjpegStream(inputStream)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error connecting to MJPEG stream", e)
+                runOnUiThread {
+                    mjpegView.setImageDrawable(null)
+                    mjpegView.setBackgroundColor(android.graphics.Color.WHITE)
+                    mjpegView.setImageResource(0)
+                    mjpegView.setScaleType(ImageView.ScaleType.CENTER)
+                    mjpegView.setImageDrawable(androidx.appcompat.content.res.AppCompatResources.getDrawable(this, android.R.color.transparent))
+                    mjpegView.setBackgroundResource(android.R.color.white)
+                    mjpegView.setContentDescription("No Live Camera Found")
+                    // Optionally, overlay a TextView for the message
+                    val parent = mjpegView.parent
+                    if (parent is android.view.ViewGroup) {
+                        val existing = parent.findViewWithTag<View>("no_camera_text")
+                        if (existing == null) {
+                            val tv = TextView(this)
+                            tv.text = "No Live Camera Found"
+                            tv.textSize = 22f
+                            tv.setTextColor(android.graphics.Color.WHITE)
+                            tv.setBackgroundColor(android.graphics.Color.BLACK)
+                            tv.gravity = Gravity.CENTER
+                            tv.tag = "no_camera_text"
+                            val params = FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT
+                            )
+                            tv.layoutParams = params
+                            parent.addView(tv)
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private fun readMjpegStream(inputStream: InputStream) {
+        val boundary = "--frame"
+        val delimiter = boundary.toByteArray()
+        val buffer = ByteArray(4096)
+        var bytesRead: Int
+        var imageBuffer = ByteArray(0)
+        while (streaming) {
+            // Find the JPEG start
+            var start = false
+            var baos = ByteArray(0)
+            while (!start && streaming) {
+                bytesRead = inputStream.read(buffer)
+                if (bytesRead == -1) break
+                val str = String(buffer, 0, bytesRead)
+                val index = str.indexOf("\r\n\r\n")
+                if (index != -1) {
+                    start = true
+                    val imageStart = index + 4
+                    baos += buffer.copyOfRange(imageStart, bytesRead)
+                }
+            }
+            // Read until boundary
+            while (streaming) {
+                bytesRead = inputStream.read(buffer)
+                if (bytesRead == -1) break
+                baos += buffer.copyOfRange(0, bytesRead)
+                val idx = indexOfSlice(baos, delimiter)
+                if (idx != -1) {
+                    imageBuffer = baos.copyOfRange(0, idx)
+                    break
+                }
+            }
+            if (imageBuffer.isNotEmpty()) {
+                val bitmap = BitmapFactory.decodeByteArray(imageBuffer, 0, imageBuffer.size)
+                runOnUiThread {
+                    mjpegView.setImageBitmap(bitmap)
+                }
+            }
+        }
+        inputStream.close()
+    }
+
+    // Helper function to find a byte array slice in another byte array
+    private fun indexOfSlice(array: ByteArray, slice: ByteArray): Int {
+        outer@ for (i in array.indices) {
+            if (i + slice.size > array.size) return -1
+            for (j in slice.indices) {
+                if (array[i + j] != slice[j]) continue@outer
+            }
+            return i
+        }
+        return -1
     }
 }
